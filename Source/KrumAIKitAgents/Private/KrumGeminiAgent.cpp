@@ -1,6 +1,9 @@
 #include "KrumGeminiAgent.h"
 #include "Misc/InteractiveProcess.h"
 #include "HAL/PlatformProcess.h"
+#include "KrumAIKitCore.h"
+#include "Serialization/JsonSerializer.h"
+#include "Dom/JsonObject.h"
 
 FKrumGeminiAgent::FKrumGeminiAgent()
 	: bIsConnected(false)
@@ -35,7 +38,19 @@ FString FKrumGeminiAgent::GetName() const
 
 bool FKrumGeminiAgent::CheckBinaryExists() const
 {
-	return true; // Simplified check
+#if PLATFORM_WINDOWS
+	FString BinaryName = TEXT("gemini.cmd");
+#else
+	FString BinaryName = TEXT("gemini");
+#endif
+
+	FString OutPath;
+	bool bFound = FPlatformProcess::FindProgramByName(*BinaryName, OutPath);
+	if (!bFound)
+	{
+		UE_LOG(LogKrumAIKit, Warning, TEXT("Gemini CLI not found in PATH. Please install it (e.g. npm install -g @google/gemini-cli)."));
+	}
+	return bFound;
 }
 
 void FKrumGeminiAgent::SendMessage(const FString& Prompt, const FString& Context, FOnMessageReceived OnResponse, FOnMessageReceived OnError)
@@ -57,16 +72,54 @@ void FKrumGeminiAgent::SendMessage(const FString& Prompt, const FString& Context
 	FString Args = FString::Printf(TEXT("-p \"%s\" --format json"), *Prompt.Replace(TEXT("\""), TEXT("\\\"")));
 #endif
 
+	GeminiAccumulatedOutput.Empty();
+
 	CurrentProcess = MakeShareable(new FInteractiveProcess(URL, Args, true));
 
-	CurrentProcess->OnOutput().BindLambda([OnResponse](const FString& Output)
+	CurrentProcess->OnOutput().BindLambda([this](const FString& Output)
 	{
-		OnResponse.ExecuteIfBound(Output);
+		GeminiAccumulatedOutput += Output;
 	});
 
-	CurrentProcess->OnCanceled().BindLambda([OnError]()
+	CurrentProcess->OnCompleted().BindLambda([this, OnResponse, OnError](int32 ExitCode, bool bCanceled)
 	{
-		OnError.ExecuteIfBound(TEXT("Gemini process was canceled."));
+		if (bCanceled)
+		{
+			OnError.ExecuteIfBound(TEXT("Gemini process was canceled."));
+			return;
+		}
+
+		if (ExitCode != 0)
+		{
+			OnError.ExecuteIfBound(FString::Printf(TEXT("Gemini process exited with code %d. Output: %s"), ExitCode, *GeminiAccumulatedOutput));
+			return;
+		}
+
+		TSharedPtr<FJsonObject> JsonObj;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(GeminiAccumulatedOutput);
+		if (FJsonSerializer::Deserialize(Reader, JsonObj) && JsonObj.IsValid())
+		{
+			const TArray<TSharedPtr<FJsonValue>>* Candidates;
+			if (JsonObj->TryGetArrayField(TEXT("candidates"), Candidates) && Candidates->Num() > 0)
+			{
+				const TSharedPtr<FJsonObject>* ContentObj;
+				if ((*Candidates)[0]->AsObject()->TryGetObjectField(TEXT("content"), ContentObj))
+				{
+					const TArray<TSharedPtr<FJsonValue>>* Parts;
+					if ((*ContentObj)->TryGetArrayField(TEXT("parts"), Parts) && Parts->Num() > 0)
+					{
+						FString TextResult;
+						if ((*Parts)[0]->AsObject()->TryGetStringField(TEXT("text"), TextResult))
+						{
+							OnResponse.ExecuteIfBound(TextResult);
+							return;
+						}
+					}
+				}
+			}
+		}
+
+		OnError.ExecuteIfBound(TEXT("Failed to parse Gemini JSON output."));
 	});
 
 	CurrentProcess->Launch();

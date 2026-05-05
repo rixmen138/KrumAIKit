@@ -24,4 +24,6 @@ private:
 private:
 	bool bIsConnected;
 	TSharedPtr<class FInteractiveProcess> CurrentProcess;
+	
+	FString GeminiAccumulatedOutput;
 };

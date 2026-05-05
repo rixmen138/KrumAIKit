@@ -2,6 +2,9 @@
 #include "Misc/InteractiveProcess.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/Paths.h"
+#include "KrumAIKitCore.h"
+#include "Serialization/JsonSerializer.h"
+#include "Dom/JsonObject.h"
 
 FKrumClaudeAgent::FKrumClaudeAgent()
 	: bIsConnected(false)
@@ -36,18 +39,19 @@ FString FKrumClaudeAgent::GetName() const
 
 bool FKrumClaudeAgent::CheckBinaryExists() const
 {
-	// Check if 'claude' exists in PATH or common locations
-	// For simplicity in this implementation, we assume it's in PATH if we can get a valid binary path.
-	// In a real scenario, you'd execute `claude --version` or similar, or find it directly.
 #if PLATFORM_WINDOWS
 	FString BinaryName = TEXT("claude.cmd");
 #else
 	FString BinaryName = TEXT("claude");
 #endif
 	
-	// Just return true for now assuming it's available in PATH
-	// (Actual check could block or requires launching a dummy process)
-	return true;
+	FString OutPath;
+	bool bFound = FPlatformProcess::FindProgramByName(*BinaryName, OutPath);
+	if (!bFound)
+	{
+		UE_LOG(LogKrumAIKit, Warning, TEXT("Claude CLI not found in PATH. Please install it with: npm install -g @anthropic-ai/claude-code"));
+	}
+	return bFound;
 }
 
 void FKrumClaudeAgent::SendMessage(const FString& Prompt, const FString& Context, FOnMessageReceived OnResponse, FOnMessageReceived OnError)
@@ -70,14 +74,53 @@ void FKrumClaudeAgent::SendMessage(const FString& Prompt, const FString& Context
 	FString Args = FString::Printf(TEXT("\"%s\" --print --output-format stream-json"), *Prompt.Replace(TEXT("\""), TEXT("\\\"")));
 #endif
 
+	ClaudeLineBuffer.Empty();
+	ClaudeAccumulatedResponse.Empty();
+
 	CurrentProcess = MakeShareable(new FInteractiveProcess(URL, Args, true));
 
-	CurrentProcess->OnOutput().BindLambda([OnResponse](const FString& Output)
+	CurrentProcess->OnOutput().BindLambda([this, OnResponse](const FString& Output)
 	{
-		// Claude CLI with stream-json outputs JSON lines.
-		// For basic implementation, we just pass the raw output (which UI could parse or just display).
-		// A full implementation would buffer and parse JSON here.
-		OnResponse.ExecuteIfBound(Output);
+		ClaudeLineBuffer += Output;
+
+		// Process lines
+		int32 NewlineIndex;
+		while (ClaudeLineBuffer.FindChar('\n', NewlineIndex))
+		{
+			FString Line = ClaudeLineBuffer.Left(NewlineIndex).TrimStartAndEnd();
+			ClaudeLineBuffer = ClaudeLineBuffer.Mid(NewlineIndex + 1);
+
+			if (Line.IsEmpty())
+			{
+				continue;
+			}
+
+			TSharedPtr<FJsonObject> JsonObj;
+			TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Line);
+			if (FJsonSerializer::Deserialize(Reader, JsonObj) && JsonObj.IsValid())
+			{
+				FString Type;
+				if (JsonObj->TryGetStringField(TEXT("type"), Type))
+				{
+					if (Type == TEXT("content_block_delta"))
+					{
+						const TSharedPtr<FJsonObject>* DeltaObj;
+						if (JsonObj->TryGetObjectField(TEXT("delta"), DeltaObj))
+						{
+							FString TextDelta;
+							if ((*DeltaObj)->TryGetStringField(TEXT("text"), TextDelta))
+							{
+								ClaudeAccumulatedResponse += TextDelta;
+							}
+						}
+					}
+					else if (Type == TEXT("message_stop"))
+					{
+						OnResponse.ExecuteIfBound(ClaudeAccumulatedResponse);
+					}
+				}
+			}
+		}
 	});
 
 	CurrentProcess->OnCanceled().BindLambda([OnError]()

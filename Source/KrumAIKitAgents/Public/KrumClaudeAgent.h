@@ -24,4 +24,7 @@ private:
 private:
 	bool bIsConnected;
 	TSharedPtr<class FInteractiveProcess> CurrentProcess;
+	
+	FString ClaudeLineBuffer;
+	FString ClaudeAccumulatedResponse;
 };
