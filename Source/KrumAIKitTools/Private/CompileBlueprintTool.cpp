@@ -50,7 +50,7 @@ FString FCompileBlueprintTool::Execute(const TSharedPtr<FJsonObject>& Params)
 
 	FKismetEditorUtilities::CompileBlueprint(Blueprint);
 
-	if (Blueprint->Status == BS_Error || Blueprint->Status == BS_Unknown)
+	if (Blueprint->Status == BS_Error)
 	{
 		return TEXT("{\"status\": \"error\", \"message\": \"Blueprint compilation failed with errors\"}");
 	}

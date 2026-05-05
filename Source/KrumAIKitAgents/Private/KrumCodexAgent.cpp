@@ -1,6 +1,8 @@
 #include "KrumCodexAgent.h"
 #include "Misc/InteractiveProcess.h"
 #include "HAL/PlatformProcess.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
 #include "KrumAIKitCore.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
@@ -63,13 +65,17 @@ void FKrumCodexAgent::SendMessage(const FString& Prompt, const FString& Context,
 
 	StopCurrent();
 
+	FString TempFilePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("KrumAIKit") / TEXT("codex_prompt_temp.txt"));
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	PlatformFile.CreateDirectoryTree(*FPaths::GetPath(TempFilePath));
+	FFileHelper::SaveStringToFile(Prompt, *TempFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+
 #if PLATFORM_WINDOWS
 	FString URL = TEXT("cmd.exe");
-	FString EscapedPrompt = Prompt.Replace(TEXT("\""), TEXT("\\\""));
-	FString Args = FString::Printf(TEXT("/c codex \"%s\" --json"), *EscapedPrompt);
+	FString Args = FString::Printf(TEXT("/c codex --json < \"%s\""), *TempFilePath);
 #else
-	FString URL = TEXT("codex");
-	FString Args = FString::Printf(TEXT("\"%s\" --json"), *Prompt.Replace(TEXT("\""), TEXT("\\\"")));
+	FString URL = TEXT("sh");
+	FString Args = FString::Printf(TEXT("-c \"codex --json < '%s'\""), *TempFilePath);
 #endif
 
 	CodexLineBuffer.Empty();

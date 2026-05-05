@@ -1,6 +1,8 @@
 #include "KrumOpenCodeAgent.h"
 #include "Misc/InteractiveProcess.h"
 #include "HAL/PlatformProcess.h"
+#include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
 #include "KrumAIKitCore.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
@@ -63,13 +65,17 @@ void FKrumOpenCodeAgent::SendMessage(const FString& Prompt, const FString& Conte
 
 	StopCurrent();
 
+	FString TempFilePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("KrumAIKit") / TEXT("opencode_prompt_temp.txt"));
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	PlatformFile.CreateDirectoryTree(*FPaths::GetPath(TempFilePath));
+	FFileHelper::SaveStringToFile(Prompt, *TempFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+
 #if PLATFORM_WINDOWS
 	FString URL = TEXT("cmd.exe");
-	FString EscapedPrompt = Prompt.Replace(TEXT("\""), TEXT("\\\""));
-	FString Args = FString::Printf(TEXT("/c opencode run \"%s\" --output-format json"), *EscapedPrompt);
+	FString Args = FString::Printf(TEXT("/c opencode run --output-format json < \"%s\""), *TempFilePath);
 #else
-	FString URL = TEXT("opencode");
-	FString Args = FString::Printf(TEXT("run \"%s\" --output-format json"), *Prompt.Replace(TEXT("\""), TEXT("\\\"")));
+	FString URL = TEXT("sh");
+	FString Args = FString::Printf(TEXT("-c \"opencode run --output-format json < '%s'\""), *TempFilePath);
 #endif
 
 	OpenCodeAccumulatedOutput.Empty();

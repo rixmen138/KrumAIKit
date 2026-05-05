@@ -3,6 +3,8 @@
 #include "Serialization/JsonSerializer.h"
 #include "Engine/Blueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "EdGraphSchema_K2.h"
+#include "GameFramework/Actor.h"
 
 FString FAddVariableTool::GetName() const
 {
@@ -85,7 +87,7 @@ FString FAddVariableTool::Execute(const TSharedPtr<FJsonObject>& Params)
 		SubCategoryObject = AActor::StaticClass();
 	}
 
-	FEdGraphPinType PinType(CategoryName, NAME_None, SubCategoryObject, EPinContainerType::None, false, FTerminalType());
+	FEdGraphPinType PinType(CategoryName, NAME_None, SubCategoryObject, EPinContainerType::None, false, FEdGraphTerminalType());
 	
 	FName NewVarName = FBlueprintEditorUtils::FindUniqueKismetName(Blueprint, *VarName);
 	

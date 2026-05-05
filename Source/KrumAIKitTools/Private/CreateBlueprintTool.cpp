@@ -5,6 +5,7 @@
 #include "AssetToolsModule.h"
 #include "IAssetTools.h"
 #include "Engine/Blueprint.h"
+#include "UObject/UObjectGlobals.h"
 
 FString FCreateBlueprintTool::GetName() const
 {
@@ -59,11 +60,11 @@ FString FCreateBlueprintTool::Execute(const TSharedPtr<FJsonObject>& Params)
 		return TEXT("{\"error\": \"Missing required parameters: name, path, or parent_class\"}");
 	}
 
-	UClass* ParentClass = FindObject<UClass>(ANY_PACKAGE, *ParentClassName);
+	UClass* ParentClass = FindFirstObject<UClass>(*ParentClassName, EFindFirstObjectOptions::None);
 	if (!ParentClass)
 	{
 		// Try adding standard engine prefix if it fails (e.g., "Actor" -> "/Script/Engine.Actor")
-		ParentClass = FindObject<UClass>(ANY_PACKAGE, *FString::Printf(TEXT("/Script/Engine.%s"), *ParentClassName));
+		ParentClass = FindFirstObject<UClass>(*FString::Printf(TEXT("/Script/Engine.%s"), *ParentClassName), EFindFirstObjectOptions::None);
 	}
 
 	if (!ParentClass)

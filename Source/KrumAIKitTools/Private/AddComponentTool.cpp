@@ -6,6 +6,7 @@
 #include "Engine/SimpleConstructionScript.h"
 #include "Engine/SCS_Node.h"
 #include "Components/ActorComponent.h"
+#include "UObject/UObjectGlobals.h"
 
 FString FAddComponentTool::GetName() const
 {
@@ -63,10 +64,10 @@ FString FAddComponentTool::Execute(const TSharedPtr<FJsonObject>& Params)
 		return TEXT("{\"error\": \"Could not load Blueprint or it lacks a ConstructionScript\"}");
 	}
 
-	UClass* CompClass = FindObject<UClass>(ANY_PACKAGE, *ComponentClassStr);
+	UClass* CompClass = FindFirstObject<UClass>(*ComponentClassStr, EFindFirstObjectOptions::None);
 	if (!CompClass)
 	{
-		CompClass = FindObject<UClass>(ANY_PACKAGE, *FString::Printf(TEXT("/Script/Engine.%s"), *ComponentClassStr));
+		CompClass = FindFirstObject<UClass>(*FString::Printf(TEXT("/Script/Engine.%s"), *ComponentClassStr), EFindFirstObjectOptions::None);
 	}
 
 	if (!CompClass || !CompClass->IsChildOf(UActorComponent::StaticClass()))

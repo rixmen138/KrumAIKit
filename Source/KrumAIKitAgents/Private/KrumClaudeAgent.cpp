@@ -2,6 +2,7 @@
 #include "Misc/InteractiveProcess.h"
 #include "HAL/PlatformProcess.h"
 #include "Misc/Paths.h"
+#include "Misc/FileHelper.h"
 #include "KrumAIKitCore.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
