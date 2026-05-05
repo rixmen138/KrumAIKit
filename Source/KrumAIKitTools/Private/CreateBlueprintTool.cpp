@@ -1,6 +1,10 @@
 #include "CreateBlueprintTool.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonSerializer.h"
+#include "Kismet2/KismetEditorUtilities.h"
+#include "AssetToolsModule.h"
+#include "IAssetTools.h"
+#include "Engine/Blueprint.h"
 
 FString FCreateBlueprintTool::GetName() const
 {
@@ -47,18 +51,59 @@ TSharedPtr<FJsonObject> FCreateBlueprintTool::GetSchema() const
 
 FString FCreateBlueprintTool::Execute(const TSharedPtr<FJsonObject>& Params)
 {
-	// Note: Fully implementing FKismetEditorUtilities::CreateBlueprint requires many headers
-	// Here we return a mocked success/failure string until full Kismet/AssetTools module includes are setup.
-	
-	FString Name, Path, ParentClass;
+	FString Name, Path, ParentClassName;
 	if (!Params->TryGetStringField(TEXT("name"), Name) || 
 		!Params->TryGetStringField(TEXT("path"), Path) || 
-		!Params->TryGetStringField(TEXT("parent_class"), ParentClass))
+		!Params->TryGetStringField(TEXT("parent_class"), ParentClassName))
 	{
 		return TEXT("{\"error\": \"Missing required parameters: name, path, or parent_class\"}");
 	}
 
-	FString ResultMsg = FString::Printf(TEXT("Successfully simulated creation of Blueprint '%s' at '%s' inheriting from '%s'"), *Name, *Path, *ParentClass);
+	UClass* ParentClass = FindObject<UClass>(ANY_PACKAGE, *ParentClassName);
+	if (!ParentClass)
+	{
+		// Try adding standard engine prefix if it fails (e.g., "Actor" -> "/Script/Engine.Actor")
+		ParentClass = FindObject<UClass>(ANY_PACKAGE, *FString::Printf(TEXT("/Script/Engine.%s"), *ParentClassName));
+	}
+
+	if (!ParentClass)
+	{
+		return FString::Printf(TEXT("{\"error\": \"Could not find parent class '%s'\"}"), *ParentClassName);
+	}
+
+	// Make sure path is valid and ends without a slash
+	if (Path.EndsWith(TEXT("/")))
+	{
+		Path.LeftChopInline(1);
+	}
+
+	FString PackageName = FString::Printf(TEXT("%s/%s"), *Path, *Name);
+	
+	UPackage* Package = CreatePackage(*PackageName);
+	if (!Package)
+	{
+		return FString::Printf(TEXT("{\"error\": \"Failed to create package at %s\"}"), *PackageName);
+	}
+
+	UBlueprint* NewBP = FKismetEditorUtilities::CreateBlueprint(
+		ParentClass,
+		Package,
+		*Name,
+		BPTYPE_Normal,
+		UBlueprint::StaticClass(),
+		UBlueprintGeneratedClass::StaticClass(),
+		FName("KrumAIKitCreateBlueprint")
+	);
+
+	if (!NewBP)
+	{
+		return TEXT("{\"error\": \"FKismetEditorUtilities::CreateBlueprint failed\"}");
+	}
+
+	FAssetRegistryModule::AssetCreated(NewBP);
+	Package->MarkPackageDirty();
+
+	FString ResultMsg = FString::Printf(TEXT("Successfully created Blueprint '%s' inheriting from '%s'"), *PackageName, *ParentClass->GetName());
 	
 	TSharedPtr<FJsonObject> ResultObj = MakeShareable(new FJsonObject());
 	ResultObj->SetStringField(TEXT("status"), TEXT("success"));

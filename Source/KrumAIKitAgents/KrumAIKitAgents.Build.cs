@@ -21,7 +21,8 @@ public class KrumAIKitAgents : ModuleRules
 				"HTTP",
 				"Json",
 				"JsonUtilities",
-				"KrumAIKitCore"
+				"KrumAIKitCore",
+				"DesktopPlatform"
 			}
 		);
 	}

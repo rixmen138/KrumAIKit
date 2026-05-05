@@ -21,7 +21,8 @@ public class KrumAIKitTools : ModuleRules
 				"UnrealEd",
 				"Json",
 				"JsonUtilities",
-				"KrumAIKitCore"
+				"KrumAIKitCore",
+				"AssetTools"
 			}
 		);
 	}
