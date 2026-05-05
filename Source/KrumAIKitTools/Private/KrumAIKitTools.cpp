@@ -9,6 +9,12 @@
 #include "CompileBlueprintTool.h"
 #include "AddFunctionTool.h"
 #include "SetBlueprintVariableDefaultTool.h"
+#include "CreateMaterialTool.h"
+#include "CreateMaterialInstanceTool.h"
+#include "SetMaterialScalarParamTool.h"
+#include "SetMaterialVectorParamTool.h"
+#include "CreateBehaviorTreeTool.h"
+#include "AddBlackboardKeyTool.h"
 
 void FKrumAIKitToolsModule::StartupModule()
 {
@@ -22,6 +28,12 @@ void FKrumAIKitToolsModule::StartupModule()
 	Registry.RegisterTool(MakeShared<FCompileBlueprintTool>());
 	Registry.RegisterTool(MakeShared<FAddFunctionTool>());
 	Registry.RegisterTool(MakeShared<FSetBlueprintVariableDefaultTool>());
+	Registry.RegisterTool(MakeShared<FCreateMaterialTool>());
+	Registry.RegisterTool(MakeShared<FCreateMaterialInstanceTool>());
+	Registry.RegisterTool(MakeShared<FSetMaterialScalarParamTool>());
+	Registry.RegisterTool(MakeShared<FSetMaterialVectorParamTool>());
+	Registry.RegisterTool(MakeShared<FCreateBehaviorTreeTool>());
+	Registry.RegisterTool(MakeShared<FAddBlackboardKeyTool>());
 }
 
 void FKrumAIKitToolsModule::ShutdownModule()

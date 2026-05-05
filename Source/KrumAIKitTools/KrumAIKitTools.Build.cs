@@ -27,7 +27,13 @@ public class KrumAIKitTools : ModuleRules
 				"KismetCompiler",
 				"GraphEditor",
 				"Kismet",
-				"Kismet2"
+				"Kismet2",
+				"MaterialEditor",
+				"AIModule",
+				"GameplayTasks",
+				"GameplayTasksEditor",
+				"BehaviorTreeEditor",
+				"AIGraph"
 			}
 		);
 	}
