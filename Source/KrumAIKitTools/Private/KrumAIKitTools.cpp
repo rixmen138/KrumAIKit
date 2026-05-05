@@ -15,6 +15,8 @@
 #include "SetMaterialVectorParamTool.h"
 #include "CreateBehaviorTreeTool.h"
 #include "AddBlackboardKeyTool.h"
+#include "ReadAssetTool.h"
+#include "SearchAssetsTool.h"
 
 void FKrumAIKitToolsModule::StartupModule()
 {
@@ -34,6 +36,8 @@ void FKrumAIKitToolsModule::StartupModule()
 	Registry.RegisterTool(MakeShared<FSetMaterialVectorParamTool>());
 	Registry.RegisterTool(MakeShared<FCreateBehaviorTreeTool>());
 	Registry.RegisterTool(MakeShared<FAddBlackboardKeyTool>());
+	Registry.RegisterTool(MakeShared<FReadAssetTool>());
+	Registry.RegisterTool(MakeShared<FSearchAssetsTool>());
 }
 
 void FKrumAIKitToolsModule::ShutdownModule()

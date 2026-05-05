@@ -20,7 +20,15 @@ public class KrumAIKitReaders : ModuleRules
 				"Engine",
 				"Json",
 				"JsonUtilities",
-				"KrumAIKitCore"
+				"KrumAIKitCore",
+				"UnrealEd",
+				"AssetRegistry",
+				"AssetTools",
+				"BlueprintGraph",
+				"Kismet2",
+				"MaterialEditor",
+				"AIModule",
+				"GameplayTasks"
 			}
 		);
 	}

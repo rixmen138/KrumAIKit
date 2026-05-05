@@ -33,7 +33,8 @@ public class KrumAIKitTools : ModuleRules
 				"GameplayTasks",
 				"GameplayTasksEditor",
 				"BehaviorTreeEditor",
-				"AIGraph"
+				"AIGraph",
+				"KrumAIKitReaders"
 			}
 		);
 	}
