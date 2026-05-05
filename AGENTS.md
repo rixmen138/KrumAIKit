@@ -19,7 +19,15 @@ KrumAIKit is an Editor-only plugin divided into several modules to enforce a cle
 3. **Pointers**: Use `TSharedPtr`, `TSharedRef`, and `TWeakPtr`. Avoid raw owning pointers to prevent memory leaks.
 4. **Error Handling**: All tool and agent executions must return sensible, properly formatted JSON errors instead of crashing. Validate all pointers (`IsValid()`, `!= nullptr`) before use.
 
+## Features Implemented Status
+
+- **Agents**: OpenRouter (HTTP), Ollama (HTTP) ✅, Claude Code (CLI) ✅, Gemini (CLI) ✅, OpenAI Codex (CLI) ✅, OpenCode (CLI) ✅.
+- **Tool Registry**: `FKrumToolRegistry` is implemented and centralized for agent discovery ✅.
+- **Blueprint Tools**: GetBlueprintInfo, AddVariable, AddComponent, CompileBlueprint, AddFunction, SetBlueprintVariableDefault are implemented ✅.
+- **Agent UI**: Dynamic selector for agents with visual connection status indicator implemented in `SKrumChatWindow` ✅.
+
 ## MCP Protocol
 KrumAIKit tools are mapped directly to MCP. When adding a new tool:
 1. Implement `GetSchema()` returning a valid JSON Schema object.
 2. Ensure `Execute()` handles parsed `FJsonObject` parameters cleanly and returns a JSON string result.
+3. Register the new tool inside `KrumAIKitTools.cpp::StartupModule()` via `FKrumToolRegistry::Get().RegisterTool(...)`.

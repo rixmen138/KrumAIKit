@@ -25,7 +25,8 @@ public class KrumAIKitEditor : ModuleRules
 				"EditorStyle",
 				"ToolMenus",
 				"KrumAIKitCore",
-				"KrumAIKitAgents"
+				"KrumAIKitAgents",
+				"KrumAIKitTools"
 			}
 		);
 	}

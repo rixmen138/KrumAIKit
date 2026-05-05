@@ -6,12 +6,21 @@
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/Text/STextBlock.h"
 #include "KrumOpenRouterAgent.h"
+#include "KrumClaudeAgent.h"
+#include "KrumGeminiAgent.h"
+#include "KrumOllamaAgent.h"
+#include "KrumCodexAgent.h"
+#include "KrumOpenCodeAgent.h"
+#include "Widgets/Input/SComboBox.h"
 
 SKrumChatWindow::~SKrumChatWindow()
 {
-	if (OpenRouterAgent.IsValid())
+	for (auto& Agent : AvailableAgents)
 	{
-		OpenRouterAgent->Disconnect();
+		if (Agent.IsValid())
+		{
+			Agent->Disconnect();
+		}
 	}
 }
 
@@ -19,14 +28,27 @@ void SKrumChatWindow::Construct(const FArguments& InArgs)
 {
 	ChatHistory.Add(MakeShared<FString>(TEXT("<System>Welcome to KrumAIKit!</>")));
 
-	OpenRouterAgent = MakeShared<FKrumOpenRouterAgent>();
-	OpenRouterAgent->Connect();
+	TSharedPtr<FKrumOpenRouterAgent> OpenRouter = MakeShared<FKrumOpenRouterAgent>();
+	TSharedPtr<FKrumClaudeAgent>     Claude     = MakeShared<FKrumClaudeAgent>();
+	TSharedPtr<FKrumGeminiAgent>     Gemini     = MakeShared<FKrumGeminiAgent>();
+	TSharedPtr<FKrumOllamaAgent>     Ollama     = MakeShared<FKrumOllamaAgent>();
+	TSharedPtr<FKrumCodexAgent>      Codex      = MakeShared<FKrumCodexAgent>();
+	TSharedPtr<FKrumOpenCodeAgent>   OpenCode   = MakeShared<FKrumOpenCodeAgent>();
+
+	AvailableAgents = { OpenRouter, Claude, Gemini, Ollama, Codex, OpenCode };
+
+	for (auto& Agent : AvailableAgents)
+	{
+		Agent->Connect();
+		AgentNames.Add(MakeShared<FString>(Agent->GetName()));
+	}
+	ActiveAgent = AvailableAgents[0]; // default: OpenRouter
 
 	ChildSlot
 	[
 		SNew(SVerticalBox)
 
-		// API Key / Settings Area (Temporary for testing)
+		// Agent Selector & API Key Area
 		+ SVerticalBox::Slot()
 		.AutoHeight()
 		.Padding(5.0f)
@@ -37,15 +59,52 @@ void SKrumChatWindow::Construct(const FArguments& InArgs)
 			.Padding(0.0f, 0.0f, 5.0f, 0.0f)
 			.VAlign(VAlign_Center)
 			[
-				SNew(STextBlock)
-				.Text(FText::FromString("OpenRouter API Key:"))
+				SNew(STextBlock).Text(FText::FromString("Agent:"))
 			]
 			+ SHorizontalBox::Slot()
-			.FillWidth(1.0f)
+			.FillWidth(0.3f)
+			.Padding(0.0f, 0.0f, 10.0f, 0.0f)
+			[
+				SAssignNew(AgentSelectorCombo, SComboBox<TSharedPtr<FString>>)
+				.OptionsSource(&AgentNames)
+				.OnSelectionChanged(this, &SKrumChatWindow::OnAgentSelected)
+				.OnGenerateWidget_Lambda([](TSharedPtr<FString> Item) {
+					return SNew(STextBlock).Text(FText::FromString(*Item));
+				})
+				[
+					SNew(STextBlock).Text_Lambda([this]{
+						return ActiveAgent.IsValid()
+							? FText::FromString(ActiveAgent->GetName())
+							: FText::FromString("None");
+					})
+				]
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(0.0f, 0.0f, 10.0f, 0.0f)
+			.VAlign(VAlign_Center)
+			[
+				SAssignNew(AgentStatusDot, STextBlock)
+				.Text_Lambda([this]{
+					bool bOk = ActiveAgent.IsValid() && ActiveAgent->IsConnected();
+					return FText::FromString(bOk ? TEXT("● ") : TEXT("● "));
+				})
+				.ColorAndOpacity_Lambda([this]{
+					bool bOk = ActiveAgent.IsValid() && ActiveAgent->IsConnected();
+					return FSlateColor(bOk ? FLinearColor::Green : FLinearColor::Red);
+				})
+			]
+			+ SHorizontalBox::Slot()
+			.FillWidth(0.7f)
 			[
 				SAssignNew(ApiKeyTextBox, SEditableTextBox)
-				.HintText(FText::FromString("sk-or-v1-..."))
+				.HintText(FText::FromString("API Key (OpenRouter only)"))
 				.IsPassword(true)
+				.Visibility_Lambda([this]{
+					if (!ActiveAgent.IsValid()) return EVisibility::Collapsed;
+					return ActiveAgent->GetName().Contains(TEXT("OpenRouter"))
+						? EVisibility::Visible : EVisibility::Collapsed;
+				})
 			]
 		]
 
@@ -114,11 +173,16 @@ FReply SKrumChatWindow::OnSendClicked()
 			ChatListView->ScrollToBottom();
 
 			// Send to Agent
-			if (OpenRouterAgent.IsValid())
+			if (ActiveAgent.IsValid())
 			{
-				if (ApiKeyTextBox.IsValid())
+				// Inject API key if it's OpenRouter
+				if (ActiveAgent->GetName().Contains(TEXT("OpenRouter")) && ApiKeyTextBox.IsValid())
 				{
-					OpenRouterAgent->SetApiKey(ApiKeyTextBox->GetText().ToString());
+					TSharedPtr<FKrumOpenRouterAgent> ORAgent = StaticCastSharedPtr<FKrumOpenRouterAgent>(ActiveAgent);
+					if (ORAgent.IsValid())
+					{
+						ORAgent->SetApiKey(ApiKeyTextBox->GetText().ToString());
+					}
 				}
 
 				ChatHistory.Add(MakeShared<FString>(TEXT("<System>Waiting for agent response...</>")));
@@ -128,11 +192,23 @@ FReply SKrumChatWindow::OnSendClicked()
 				FOnMessageReceived OnResponse = FOnMessageReceived::CreateSP(this, &SKrumChatWindow::OnAgentResponse);
 				FOnMessageReceived OnError = FOnMessageReceived::CreateSP(this, &SKrumChatWindow::OnAgentError);
 				
-				OpenRouterAgent->SendMessage(InputText, TEXT("You are KrumAI, a helpful Unreal Engine 5 assistant."), OnResponse, OnError);
+				ActiveAgent->SendMessage(InputText, TEXT("You are KrumAI, a helpful Unreal Engine 5 assistant."), OnResponse, OnError);
 			}
 		}
 	}
 	return FReply::Handled();
+}
+
+void SKrumChatWindow::OnAgentSelected(TSharedPtr<FString> Item, ESelectInfo::Type SelectType)
+{
+	for (auto& Agent : AvailableAgents)
+	{
+		if (Agent->GetName() == *Item)
+		{
+			ActiveAgent = Agent;
+			break;
+		}
+	}
 }
 
 void SKrumChatWindow::OnAgentResponse(const FString& ResponseText)

@@ -64,14 +64,17 @@ void FKrumClaudeAgent::SendMessage(const FString& Prompt, const FString& Context
 
 	StopCurrent();
 
+	FString TempFilePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("KrumAIKit") / TEXT("prompt_temp.txt"));
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	PlatformFile.CreateDirectoryTree(*FPaths::GetPath(TempFilePath));
+	FFileHelper::SaveStringToFile(Prompt, *TempFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+
 #if PLATFORM_WINDOWS
 	FString URL = TEXT("cmd.exe");
-	// Note: We're passing the prompt in arguments, escaping quotes might be needed
-	FString EscapedPrompt = Prompt.Replace(TEXT("\""), TEXT("\\\""));
-	FString Args = FString::Printf(TEXT("/c claude \"%s\" --print --output-format stream-json"), *EscapedPrompt);
+	FString Args = FString::Printf(TEXT("/c claude --print --output-format stream-json < \"%s\""), *TempFilePath);
 #else
-	FString URL = TEXT("claude");
-	FString Args = FString::Printf(TEXT("\"%s\" --print --output-format stream-json"), *Prompt.Replace(TEXT("\""), TEXT("\\\"")));
+	FString URL = TEXT("sh");
+	FString Args = FString::Printf(TEXT("-c \"claude --print --output-format stream-json < '%s'\""), *TempFilePath);
 #endif
 
 	ClaudeLineBuffer.Empty();

@@ -10,6 +10,7 @@ public class KrumAIKitTools : ModuleRules
 			new string[]
 			{
 				"Core",
+				"KrumAIKitCore"
 			}
 		);
 			
@@ -21,8 +22,12 @@ public class KrumAIKitTools : ModuleRules
 				"UnrealEd",
 				"Json",
 				"JsonUtilities",
-				"KrumAIKitCore",
-				"AssetTools"
+				"AssetTools",
+				"BlueprintGraph",
+				"KismetCompiler",
+				"GraphEditor",
+				"Kismet",
+				"Kismet2"
 			}
 		);
 	}
