@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "krumaikit": {
+      "command": "Binaries/Win64/UnrealEditor-Cmd.exe",
+      "args": [
+        "YourProjectName.uproject",
+        "-run=KrumAIKitMCPServer",
+        "-NoUI"
+      ]
+    }
+  }
+}
