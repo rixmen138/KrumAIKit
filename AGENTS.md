@@ -24,7 +24,14 @@ KrumAIKit is an Editor-only plugin divided into several modules to enforce a cle
 - **Agents**: OpenRouter (HTTP), Ollama (HTTP) ✅, Claude Code (CLI) ✅, Gemini (CLI) ✅, OpenAI Codex (CLI) ✅, OpenCode (CLI) ✅.
 - **Tool Registry**: `FKrumToolRegistry` is implemented and centralized for agent discovery ✅.
 - **Blueprint Tools**: GetBlueprintInfo, AddVariable, AddComponent, CompileBlueprint, AddFunction, SetBlueprintVariableDefault are implemented ✅.
-- **Agent UI**: Dynamic selector for agents with visual connection status indicator implemented in `SKrumChatWindow` ✅.
+- **Material Tools**: CreateMaterial, CreateMaterialInstance, SetMaterialScalarParam, SetMaterialVectorParam ✅.
+- **Behavior Tree Tools**: CreateBehaviorTree, AddBlackboardKey ✅.
+- **Asset Readers**: `FKrumAssetReader` with `ReadAsset()` and `SearchAssets()` ✅.
+- **MCP Server**: JSON-RPC 2.0 stdio server, auto-writes `.mcp.json` ✅.
+- **Project Indexer**: Background thread, auto context injection ✅.
+- **Settings**: `UDeveloperSettings` page at Project Settings → Plugins → KrumAIKit ✅.
+- **Agent UI Polish**: Dynamic selector for agents, New Chat, Stop button, chat history persistence ✅.
+- **OpenRouter Streaming**: SSE token-by-token display ✅.
 
 ## MCP Protocol
 KrumAIKit tools are mapped directly to MCP. When adding a new tool:
