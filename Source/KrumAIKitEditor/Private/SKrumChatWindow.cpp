@@ -12,6 +12,11 @@
 #include "KrumCodexAgent.h"
 #include "KrumOpenCodeAgent.h"
 #include "Widgets/Input/SComboBox.h"
+#include "KrumSettings.h"
+#include "Serialization/JsonSerializer.h"
+#include "Dom/JsonObject.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 
 SKrumChatWindow::~SKrumChatWindow()
 {
@@ -26,8 +31,6 @@ SKrumChatWindow::~SKrumChatWindow()
 
 void SKrumChatWindow::Construct(const FArguments& InArgs)
 {
-	ChatHistory.Add(MakeShared<FString>(TEXT("<System>Welcome to KrumAIKit!</>")));
-
 	TSharedPtr<FKrumOpenRouterAgent> OpenRouter = MakeShared<FKrumOpenRouterAgent>();
 	TSharedPtr<FKrumClaudeAgent>     Claude     = MakeShared<FKrumClaudeAgent>();
 	TSharedPtr<FKrumGeminiAgent>     Gemini     = MakeShared<FKrumGeminiAgent>();
@@ -43,6 +46,21 @@ void SKrumChatWindow::Construct(const FArguments& InArgs)
 		AgentNames.Add(MakeShared<FString>(Agent->GetName()));
 	}
 	ActiveAgent = AvailableAgents[0]; // default: OpenRouter
+
+	const UKrumSettings* S = GetDefault<UKrumSettings>();
+	if (S)
+	{
+		OpenRouter->SetApiKey(S->OpenRouterApiKey);
+		OpenRouter->SetModel(S->OpenRouterModel);
+		Ollama->SetBaseUrl(S->OllamaBaseUrl);
+		Ollama->SetModel(S->OllamaModel);
+	}
+
+	LoadChatHistory();
+	if (ChatHistory.Num() == 0)
+	{
+		ChatHistory.Add(MakeShared<FString>(TEXT("<System>Welcome to KrumAIKit!</>")));
+	}
 
 	ChildSlot
 	[
@@ -140,6 +158,40 @@ void SKrumChatWindow::Construct(const FArguments& InArgs)
 				.Text(FText::FromString("Send"))
 				.OnClicked(this, &SKrumChatWindow::OnSendClicked)
 			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(5.0f, 0.0f, 0.0f, 0.0f)
+			[
+				SNew(SButton)
+				.Text(FText::FromString("New Chat"))
+				.OnClicked_Lambda([this]() -> FReply {
+					ChatHistory.Empty();
+					ChatHistory.Add(MakeShared<FString>(TEXT("<System>New conversation started.</>")));
+					ChatListView->RequestListRefresh();
+					SaveChatHistory();
+					return FReply::Handled();
+				})
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(5.0f, 0.0f, 0.0f, 0.0f)
+			[
+				SNew(SButton)
+				.Text(FText::FromString("Stop"))
+				.IsEnabled_Lambda([this]{ return bIsWaitingForAgent; })
+				.OnClicked_Lambda([this]() -> FReply {
+					if (ActiveAgent.IsValid()) ActiveAgent->StopCurrent();
+					bIsWaitingForAgent = false;
+					if (ChatHistory.Num() > 0 && ChatHistory.Last()->Contains(TEXT("Waiting for agent response")))
+					{
+						ChatHistory.Pop();
+					}
+					ChatHistory.Add(MakeShared<FString>(TEXT("<System>Stopped.</>")));
+					ChatListView->RequestListRefresh();
+					SaveChatHistory();
+					return FReply::Handled();
+				})
+			]
 		]
 	];
 }
@@ -185,6 +237,8 @@ FReply SKrumChatWindow::OnSendClicked()
 					}
 				}
 
+				bIsWaitingForAgent = true;
+
 				ChatHistory.Add(MakeShared<FString>(TEXT("<System>Waiting for agent response...</>")));
 				ChatListView->RequestListRefresh();
 				ChatListView->ScrollToBottom();
@@ -194,12 +248,18 @@ FReply SKrumChatWindow::OnSendClicked()
 				
 				#include "KrumProjectIndexer.h"
 				
-				FString ContextSnippet = FKrumProjectIndexer::Get().GetContextSnippet(InputText);
 				FString FullContext = TEXT("You are KrumAI, a helpful Unreal Engine 5 assistant.");
-				if (!ContextSnippet.IsEmpty())
+				const UKrumSettings* S = GetDefault<UKrumSettings>();
+				if (S && S->bAutoInjectAssetContext)
 				{
-					FullContext += TEXT("\n\n") + ContextSnippet;
+					FString ContextSnippet = FKrumProjectIndexer::Get().GetContextSnippet(InputText);
+					if (!ContextSnippet.IsEmpty())
+					{
+						FullContext += TEXT("\n\n") + ContextSnippet;
+					}
 				}
+
+				SaveChatHistory();
 				ActiveAgent->SendMessage(InputText, FullContext, OnResponse, OnError);
 			}
 		}
@@ -221,6 +281,8 @@ void SKrumChatWindow::OnAgentSelected(TSharedPtr<FString> Item, ESelectInfo::Typ
 
 void SKrumChatWindow::OnAgentResponse(const FString& ResponseText)
 {
+	bIsWaitingForAgent = false;
+
 	// Remove the "Waiting..." message if it's the last one
 	if (ChatHistory.Num() > 0 && ChatHistory.Last()->Contains(TEXT("Waiting for agent response")))
 	{
@@ -230,10 +292,13 @@ void SKrumChatWindow::OnAgentResponse(const FString& ResponseText)
 	ChatHistory.Add(MakeShared<FString>(FString::Printf(TEXT("<Agent>Agent: %s</>"), *ResponseText)));
 	ChatListView->RequestListRefresh();
 	ChatListView->ScrollToBottom();
+	SaveChatHistory();
 }
 
 void SKrumChatWindow::OnAgentError(const FString& ErrorText)
 {
+	bIsWaitingForAgent = false;
+
 	// Remove the "Waiting..." message if it's the last one
 	if (ChatHistory.Num() > 0 && ChatHistory.Last()->Contains(TEXT("Waiting for agent response")))
 	{
@@ -243,4 +308,37 @@ void SKrumChatWindow::OnAgentError(const FString& ErrorText)
 	ChatHistory.Add(MakeShared<FString>(FString::Printf(TEXT("<System>Error: %s</>"), *ErrorText)));
 	ChatListView->RequestListRefresh();
 	ChatListView->ScrollToBottom();
+	SaveChatHistory();
+}
+
+void SKrumChatWindow::SaveChatHistory()
+{
+	FString FilePath = FPaths::ProjectSavedDir() / TEXT("KrumAIKit") / TEXT("chat_history.json");
+	TArray<TSharedPtr<FJsonValue>> JsonArray;
+	for (const auto& Msg : ChatHistory)
+	{
+		JsonArray.Add(MakeShareable(new FJsonValueString(*Msg)));
+	}
+	FString OutputString;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&OutputString);
+	FJsonSerializer::Serialize(JsonArray, Writer);
+	FFileHelper::SaveStringToFile(OutputString, *FilePath);
+}
+
+void SKrumChatWindow::LoadChatHistory()
+{
+	FString FilePath = FPaths::ProjectSavedDir() / TEXT("KrumAIKit") / TEXT("chat_history.json");
+	FString FileContent;
+	if (FFileHelper::LoadFileToString(FileContent, *FilePath))
+	{
+		TArray<TSharedPtr<FJsonValue>> JsonArray;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(FileContent);
+		if (FJsonSerializer::Deserialize(Reader, JsonArray))
+		{
+			for (const auto& Val : JsonArray)
+			{
+				ChatHistory.Add(MakeShared<FString>(Val->AsString()));
+			}
+		}
+	}
 }

@@ -20,12 +20,14 @@ public:
 	//~ End IKrumAgent Interface
 
 	void SetApiKey(const FString& InApiKey);
+	void SetModel(const FString& Model);
 
 private:
 	void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FOnMessageReceived OnResponseCallback, FOnMessageReceived OnErrorCallback);
 
 private:
 	FString ApiKey;
+	FString CurrentModel = TEXT("anthropic/claude-3.5-sonnet");
 	bool bIsConnected;
 	TSharedPtr<class IHttpRequest, ESPMode::ThreadSafe> CurrentRequest;
 };

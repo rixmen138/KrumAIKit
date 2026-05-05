@@ -42,6 +42,11 @@ void FKrumOpenRouterAgent::SetApiKey(const FString& InApiKey)
 	ApiKey = InApiKey;
 }
 
+void FKrumOpenRouterAgent::SetModel(const FString& Model)
+{
+	CurrentModel = Model;
+}
+
 void FKrumOpenRouterAgent::SendMessage(const FString& Prompt, const FString& Context, FOnMessageReceived OnResponse, FOnMessageReceived OnError)
 {
 	if (!bIsConnected)
@@ -68,7 +73,7 @@ void FKrumOpenRouterAgent::SendMessage(const FString& Prompt, const FString& Con
 
 	// Construct JSON payload
 	TSharedPtr<FJsonObject> RequestJson = MakeShareable(new FJsonObject());
-	RequestJson->SetStringField(TEXT("model"), TEXT("anthropic/claude-3.5-sonnet")); // Default model
+	RequestJson->SetStringField(TEXT("model"), CurrentModel);
 
 	TArray<TSharedPtr<FJsonValue>> MessagesArray;
 

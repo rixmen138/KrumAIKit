@@ -29,6 +29,9 @@ private:
 	void OnAgentError(const FString& ErrorText);
 	void OnAgentSelected(TSharedPtr<FString> Item, ESelectInfo::Type SelectType);
 
+	void SaveChatHistory();
+	void LoadChatHistory();
+
 private:
 	TArray<TSharedPtr<FString>> ChatHistory;
 	TSharedPtr<SListView<TSharedPtr<FString>>> ChatListView;
@@ -40,4 +43,5 @@ private:
 	TSharedPtr<SComboBox<TSharedPtr<FString>>> AgentSelectorCombo;
 	TArray<TSharedPtr<FString>> AgentNames;
 	TSharedPtr<STextBlock> AgentStatusDot;
+	bool bIsWaitingForAgent = false;
 };

@@ -10,6 +10,7 @@
 #include "KrumMCPServer.h"
 #include "KrumProjectIndexer.h"
 #include "Misc/FileHelper.h"
+#include "KrumSettings.h"
 
 static const FName KrumAITabName("KrumAI");
 
@@ -63,10 +64,19 @@ void FKrumAIKitEditorModule::StartupModule()
 		UE_LOG(LogKrumAIKit, Log, TEXT("KrumAIKit: wrote .mcp.json to %s"), *MCPJsonPath);
 	}
 
-	// We will read settings to start MCPServer in a future step, for now just start it:
-	// MCPServer = MakeUnique<FKrumMCPServer>(); MCPServer->Start();
-
-	FKrumProjectIndexer::Get().Start();
+	const UKrumSettings* S = GetDefault<UKrumSettings>();
+	if (S)
+	{
+		if (S->bEnableIndexer)
+		{
+			FKrumProjectIndexer::Get().Start();
+		}
+		if (S->bEnableMCPServer)
+		{
+			MCPServer = MakeUnique<FKrumMCPServer>();
+			MCPServer->Start();
+		}
+	}
 }
 
 void FKrumAIKitEditorModule::ShutdownModule()
