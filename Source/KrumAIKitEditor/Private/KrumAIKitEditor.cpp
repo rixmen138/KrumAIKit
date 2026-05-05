@@ -7,6 +7,8 @@
 #include "WorkspaceMenuStructureModule.h"
 #include "Widgets/Docking/SDockTab.h"
 #include "SKrumChatWindow.h"
+#include "KrumMCPServer.h"
+#include "Misc/FileHelper.h"
 
 static const FName KrumAITabName("KrumAI");
 
@@ -38,10 +40,40 @@ void FKrumAIKitEditorModule::StartupModule()
     }))
     .SetDisplayName(LOCTEXT("FKrumAITabTitle", "KrumAI Chat"))
     .SetMenuType(ETabSpawnerMenuType::Hidden);
+
+	FString ProjectDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir());
+	FString MCPJsonPath = ProjectDir / TEXT(".mcp.json");
+
+	if (!FPaths::FileExists(MCPJsonPath))
+	{
+		FString EditorBinaryPath = FPlatformProcess::ExecutablePath();
+		FString ProjectPath = FPaths::ConvertRelativePathToFull(FPaths::GetProjectFilePath());
+		
+		FString MCPContent = FString::Printf(
+			TEXT("{\n  \"mcpServers\": {\n    \"krumaikit\": {\n")
+			TEXT("      \"command\": \"%s\",\n")
+			TEXT("      \"args\": [\"%s\"],\n")
+			TEXT("      \"env\": { \"KRUMAIKIT_MCP\": \"1\" }\n")
+			TEXT("    }\n  }\n}"),
+			*EditorBinaryPath.Replace(TEXT("\\"), TEXT("\\\\")),
+			*ProjectPath.Replace(TEXT("\\"), TEXT("\\\\"))
+		);
+		FFileHelper::SaveStringToFile(MCPContent, *MCPJsonPath);
+		UE_LOG(LogKrumAIKit, Log, TEXT("KrumAIKit: wrote .mcp.json to %s"), *MCPJsonPath);
+	}
+
+	// We will read settings to start MCPServer in a future step, for now just start it:
+	// MCPServer = MakeUnique<FKrumMCPServer>(); MCPServer->Start();
 }
 
 void FKrumAIKitEditorModule::ShutdownModule()
 {
+	if (MCPServer)
+	{
+		MCPServer->Stop();
+		MCPServer.Reset();
+	}
+
 	UToolMenus::UnRegisterStartupCallback(this);
 	UToolMenus::UnregisterOwner(this);
 

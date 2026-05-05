@@ -5,6 +5,7 @@
 
 class FToolBarBuilder;
 class FMenuBuilder;
+class FKrumMCPServer;
 
 class FKrumAIKitEditorModule : public IModuleInterface
 {
@@ -20,4 +21,5 @@ private:
 
 private:
 	TSharedPtr<class FUICommandList> PluginCommands;
+	TUniquePtr<FKrumMCPServer> MCPServer;
 };
