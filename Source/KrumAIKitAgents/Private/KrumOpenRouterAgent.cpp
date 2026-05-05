@@ -93,8 +93,7 @@ void FKrumOpenRouterAgent::SendMessage(const FString& Prompt, const FString& Con
 	MessagesArray.Add(MakeShareable(new FJsonValueObject(UserMessage)));
 
 	RequestJson->SetArrayField(TEXT("messages"), MessagesArray);
-	// We disable streaming for the basic implementation, can upgrade to SSE later
-	RequestJson->SetBoolField(TEXT("stream"), false); 
+	RequestJson->SetBoolField(TEXT("stream"), true); 
 
 	FString RequestBody;
 	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
@@ -102,7 +101,10 @@ void FKrumOpenRouterAgent::SendMessage(const FString& Prompt, const FString& Con
 
 	CurrentRequest->SetContentAsString(RequestBody);
 
-	CurrentRequest->OnProcessRequestComplete().BindRaw(this, &FKrumOpenRouterAgent::OnResponseReceived, OnResponse, OnError);
+	StreamBuffer.Empty();
+
+	CurrentRequest->OnRequestProgress().BindRaw(this, &FKrumOpenRouterAgent::OnStreamProgress, OnResponse, OnError);
+	CurrentRequest->OnProcessRequestComplete().BindRaw(this, &FKrumOpenRouterAgent::OnStreamComplete, OnError);
 
 	CurrentRequest->ProcessRequest();
 }
@@ -116,39 +118,54 @@ void FKrumOpenRouterAgent::StopCurrent()
 	}
 }
 
-void FKrumOpenRouterAgent::OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FOnMessageReceived OnResponseCallback, FOnMessageReceived OnErrorCallback)
+void FKrumOpenRouterAgent::OnStreamProgress(FHttpRequestPtr Req, int32 BytesSent, int32 BytesReceived, FOnMessageReceived OnResponse, FOnMessageReceived OnError)
 {
+	if (!Req.IsValid() || !Req->GetResponse().IsValid()) return;
+
+	FString RawContent = Req->GetResponse()->GetContentAsString();
+	FString NewChunk = RawContent.Mid(StreamBuffer.Len());
+	StreamBuffer = RawContent;
+	
+	TArray<FString> Lines;
+	NewChunk.ParseIntoArrayLines(Lines);
+	for (const FString& Line : Lines)
+	{
+		if (!Line.StartsWith(TEXT("data: "))) continue;
+		FString JsonPart = Line.Mid(6); // skip "data: "
+		if (JsonPart == TEXT("[DONE]")) continue;
+		
+		TSharedPtr<FJsonObject> Chunk;
+		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(JsonPart);
+		if (!FJsonSerializer::Deserialize(Reader, Chunk) || !Chunk.IsValid()) continue;
+		
+		const TArray<TSharedPtr<FJsonValue>>* Choices;
+		if (!Chunk->TryGetArrayField(TEXT("choices"), Choices) || Choices->IsEmpty()) continue;
+		
+		const TSharedPtr<FJsonObject>* DeltaObj;
+		if (!(*Choices)[0]->AsObject()->TryGetObjectField(TEXT("delta"), DeltaObj)) continue;
+		
+		FString Content;
+		if (!(*DeltaObj)->TryGetStringField(TEXT("content"), Content)) continue;
+		if (Content.IsEmpty()) continue;
+		
+		OnResponse.ExecuteIfBound(Content);
+	}
+}
+
+void FKrumOpenRouterAgent::OnStreamComplete(FHttpRequestPtr Req, FHttpResponsePtr Resp, bool bSuccess, FOnMessageReceived OnError)
+{
+	StreamBuffer.Empty();
 	CurrentRequest.Reset();
 
-	if (!bWasSuccessful || !Response.IsValid())
+	if (!bSuccess || !Resp.IsValid())
 	{
-		OnErrorCallback.ExecuteIfBound(TEXT("Network error or invalid response from OpenRouter."));
+		OnError.ExecuteIfBound(TEXT("Stream connection failed or invalid response from OpenRouter."));
 		return;
 	}
 
-	if (Response->GetResponseCode() < 200 || Response->GetResponseCode() >= 300)
+	if (Resp->GetResponseCode() < 200 || Resp->GetResponseCode() >= 300)
 	{
-		FString ErrorMsg = FString::Printf(TEXT("HTTP Error %d: %s"), Response->GetResponseCode(), *Response->GetContentAsString());
-		OnErrorCallback.ExecuteIfBound(ErrorMsg);
-		return;
+		FString ErrorMsg = FString::Printf(TEXT("HTTP Error %d: %s"), Resp->GetResponseCode(), *Resp->GetContentAsString());
+		OnError.ExecuteIfBound(ErrorMsg);
 	}
-
-	// Parse JSON
-	TSharedPtr<FJsonObject> ResponseJson;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-
-	if (FJsonSerializer::Deserialize(Reader, ResponseJson) && ResponseJson.IsValid())
-	{
-		const TArray<TSharedPtr<FJsonValue>>* Choices;
-		if (ResponseJson->TryGetArrayField(TEXT("choices"), Choices) && Choices->Num() > 0)
-		{
-			TSharedPtr<FJsonObject> MessageObj = (*Choices)[0]->AsObject()->GetObjectField(TEXT("message"));
-			FString Content = MessageObj->GetStringField(TEXT("content"));
-			
-			OnResponseCallback.ExecuteIfBound(Content);
-			return;
-		}
-	}
-
-	OnErrorCallback.ExecuteIfBound(TEXT("Failed to parse response JSON from OpenRouter."));
 }

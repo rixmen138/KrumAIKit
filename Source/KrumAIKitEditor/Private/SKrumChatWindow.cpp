@@ -186,6 +186,7 @@ void SKrumChatWindow::Construct(const FArguments& InArgs)
 					{
 						ChatHistory.Pop();
 					}
+				bIsStreamingResponse = false;
 					ChatHistory.Add(MakeShared<FString>(TEXT("<System>Stopped.</>")));
 					ChatListView->RequestListRefresh();
 					SaveChatHistory();
@@ -281,15 +282,24 @@ void SKrumChatWindow::OnAgentSelected(TSharedPtr<FString> Item, ESelectInfo::Typ
 
 void SKrumChatWindow::OnAgentResponse(const FString& ResponseText)
 {
-	bIsWaitingForAgent = false;
-
 	// Remove the "Waiting..." message if it's the last one
-	if (ChatHistory.Num() > 0 && ChatHistory.Last()->Contains(TEXT("Waiting for agent response")))
+	if (bIsWaitingForAgent && ChatHistory.Num() > 0 && ChatHistory.Last()->Contains(TEXT("Waiting for agent response")))
 	{
 		ChatHistory.Pop();
+		ChatHistory.Add(MakeShared<FString>(TEXT("<Agent>")));
+		bIsStreamingResponse = true;
+		bIsWaitingForAgent = false;
 	}
 
-	ChatHistory.Add(MakeShared<FString>(FString::Printf(TEXT("<Agent>Agent: %s</>"), *ResponseText)));
+	if (bIsStreamingResponse)
+	{
+		*ChatHistory.Last() += ResponseText;
+	}
+	else
+	{
+		ChatHistory.Add(MakeShared<FString>(FString::Printf(TEXT("<Agent>Agent: %s</>"), *ResponseText)));
+	}
+
 	ChatListView->RequestListRefresh();
 	ChatListView->ScrollToBottom();
 	SaveChatHistory();
@@ -298,6 +308,7 @@ void SKrumChatWindow::OnAgentResponse(const FString& ResponseText)
 void SKrumChatWindow::OnAgentError(const FString& ErrorText)
 {
 	bIsWaitingForAgent = false;
+	bIsStreamingResponse = false;
 
 	// Remove the "Waiting..." message if it's the last one
 	if (ChatHistory.Num() > 0 && ChatHistory.Last()->Contains(TEXT("Waiting for agent response")))

@@ -23,10 +23,12 @@ public:
 	void SetModel(const FString& Model);
 
 private:
-	void OnResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful, FOnMessageReceived OnResponseCallback, FOnMessageReceived OnErrorCallback);
+	void OnStreamProgress(FHttpRequestPtr Req, int32 BytesSent, int32 BytesReceived, FOnMessageReceived OnResponse, FOnMessageReceived OnError);
+	void OnStreamComplete(FHttpRequestPtr Req, FHttpResponsePtr Resp, bool bSuccess, FOnMessageReceived OnError);
 
 private:
 	FString ApiKey;
+	FString StreamBuffer;
 	FString CurrentModel = TEXT("anthropic/claude-3.5-sonnet");
 	bool bIsConnected;
 	TSharedPtr<class IHttpRequest, ESPMode::ThreadSafe> CurrentRequest;

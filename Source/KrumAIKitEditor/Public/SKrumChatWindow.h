@@ -44,4 +44,5 @@ private:
 	TArray<TSharedPtr<FString>> AgentNames;
 	TSharedPtr<STextBlock> AgentStatusDot;
 	bool bIsWaitingForAgent = false;
+	bool bIsStreamingResponse = false;
 };
