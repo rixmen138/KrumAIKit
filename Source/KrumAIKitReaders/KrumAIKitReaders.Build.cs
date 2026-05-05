@@ -25,7 +25,7 @@ public class KrumAIKitReaders : ModuleRules
 				"AssetRegistry",
 				"AssetTools",
 				"BlueprintGraph",
-				"Kismet2",
+				"Kismet",
 				"MaterialEditor",
 				"AIModule",
 				"GameplayTasks"
