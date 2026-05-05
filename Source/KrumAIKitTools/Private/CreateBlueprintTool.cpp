@@ -101,7 +101,8 @@ FString FCreateBlueprintTool::Execute(const TSharedPtr<FJsonObject>& Params)
 		return TEXT("{\"error\": \"FKismetEditorUtilities::CreateBlueprint failed\"}");
 	}
 
-	FAssetRegistryModule::AssetCreated(NewBP);
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	AssetRegistryModule.Get().AssetCreated(NewBP);
 	Package->MarkPackageDirty();
 
 	FString ResultMsg = FString::Printf(TEXT("Successfully created Blueprint '%s' inheriting from '%s'"), *PackageName, *ParentClass->GetName());

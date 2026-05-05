@@ -66,7 +66,7 @@ FString FGetBlueprintInfoTool::Execute(const TSharedPtr<FJsonObject>& Params)
 		TSharedPtr<FJsonObject> VarObj = MakeShareable(new FJsonObject());
 		VarObj->SetStringField(TEXT("name"), VarDesc.VarName.ToString());
 		VarObj->SetStringField(TEXT("type"), VarDesc.VarType.PinCategory.ToString());
-		VarObj->SetStringField(TEXT("sub_type"), VarDesc.VarType.PinSubCategoryObject ? VarDesc.VarType.PinSubCategoryObject->GetName() : TEXT(""));
+		VarObj->SetStringField(TEXT("sub_type"), VarDesc.VarType.PinSubCategoryObject.IsValid() ? VarDesc.VarType.PinSubCategoryObject->GetName() : TEXT(""));
 		VarObj->SetStringField(TEXT("default_value"), VarDesc.DefaultValue);
 		VarsArray.Add(MakeShareable(new FJsonValueObject(VarObj)));
 	}

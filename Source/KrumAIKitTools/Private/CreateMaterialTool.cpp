@@ -78,7 +78,8 @@ FString FCreateMaterialTool::Execute(const TSharedPtr<FJsonObject>& Params)
 		Mat->SetShadingModel(ShadingModel);
 	}
 
-	FAssetRegistryModule::AssetCreated(Mat);
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	AssetRegistryModule.Get().AssetCreated(Mat);
 	Mat->MarkPackageDirty();
 
 	FString ResultString = FString::Printf(TEXT("{\"status\": \"success\", \"asset_path\": \"%s\"}"), *AssetPath);

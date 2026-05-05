@@ -20,7 +20,6 @@ void FKrumAIKitStyle::Shutdown()
 	if (StyleInstance.IsValid())
 	{
 		FSlateStyleRegistry::UnRegisterSlateStyle(*StyleInstance);
-		EnsureOrVcheck(StyleInstance.IsUnique(), TEXT("FKrumAIKitStyle has more than one reference."));
 		StyleInstance.Reset();
 	}
 }

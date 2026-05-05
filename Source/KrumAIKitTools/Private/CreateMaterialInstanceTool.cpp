@@ -73,7 +73,8 @@ FString FCreateMaterialInstanceTool::Execute(const TSharedPtr<FJsonObject>& Para
 	}
 
 	MIC->Parent = Parent;
-	FAssetRegistryModule::AssetCreated(MIC);
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	AssetRegistryModule.Get().AssetCreated(MIC);
 	MIC->MarkPackageDirty();
 
 	return TEXT("{\"status\": \"success\"}");

@@ -59,14 +59,16 @@ FString FCreateBehaviorTreeTool::Execute(const TSharedPtr<FJsonObject>& Params)
 	FString BBName = AssetName + TEXT("_BB");
 	UBlackboardData* BB = Cast<UBlackboardData>(FAssetToolsModule::GetModule().Get().CreateAsset(BBName, PackagePath, UBlackboardData::StaticClass(), nullptr));
 	
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+
 	if (BB)
 	{
 		BT->BlackboardAsset = BB;
-		FAssetRegistryModule::AssetCreated(BB);
+		AssetRegistryModule.Get().AssetCreated(BB);
 		BB->MarkPackageDirty();
 	}
 
-	FAssetRegistryModule::AssetCreated(BT);
+	AssetRegistryModule.Get().AssetCreated(BT);
 	BT->MarkPackageDirty();
 
 	FString ResultString = FString::Printf(TEXT("{\"status\": \"success\", \"bt_path\": \"%s\", \"bb_path\": \"%s/%s\"}"), *AssetPath, *PackagePath, *BBName);
