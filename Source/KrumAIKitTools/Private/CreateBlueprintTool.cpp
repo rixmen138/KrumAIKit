@@ -6,6 +6,7 @@
 #include "IAssetTools.h"
 #include "Engine/Blueprint.h"
 #include "UObject/UObjectGlobals.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 
 FString FCreateBlueprintTool::GetName() const
 {
