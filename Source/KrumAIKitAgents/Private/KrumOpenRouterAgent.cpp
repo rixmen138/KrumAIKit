@@ -103,7 +103,7 @@ void FKrumOpenRouterAgent::SendMessage(const FString& Prompt, const FString& Con
 
 	StreamBuffer.Empty();
 
-	CurrentRequest->OnRequestProgress().BindRaw(this, &FKrumOpenRouterAgent::OnStreamProgress, OnResponse, OnError);
+	CurrentRequest->OnRequestProgress64().BindRaw(this, &FKrumOpenRouterAgent::OnStreamProgress, OnResponse, OnError);
 	CurrentRequest->OnProcessRequestComplete().BindRaw(this, &FKrumOpenRouterAgent::OnStreamComplete, OnError);
 
 	CurrentRequest->ProcessRequest();
@@ -118,7 +118,7 @@ void FKrumOpenRouterAgent::StopCurrent()
 	}
 }
 
-void FKrumOpenRouterAgent::OnStreamProgress(FHttpRequestPtr Req, int32 BytesSent, int32 BytesReceived, FOnMessageReceived OnResponse, FOnMessageReceived OnError)
+void FKrumOpenRouterAgent::OnStreamProgress(FHttpRequestPtr Req, uint64 BytesSent, uint64 BytesReceived, FOnMessageReceived OnResponse, FOnMessageReceived OnError)
 {
 	if (!Req.IsValid() || !Req->GetResponse().IsValid()) return;
 

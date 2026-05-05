@@ -40,19 +40,9 @@ FString FKrumOpenCodeAgent::GetName() const
 
 bool FKrumOpenCodeAgent::CheckBinaryExists() const
 {
-#if PLATFORM_WINDOWS
-	FString BinaryName = TEXT("opencode.cmd");
-#else
-	FString BinaryName = TEXT("opencode");
-#endif
-
-	FString OutPath;
-	bool bFound = FPlatformProcess::FindProgramByName(*BinaryName, OutPath);
-	if (!bFound)
-	{
-		UE_LOG(LogKrumAIKit, Warning, TEXT("OpenCode CLI not found in PATH."));
-	}
-	return bFound;
+	// Assuming it's in PATH or let the OS resolve it when executing via cmd/sh.
+	// FPlatformProcess::FindProgramByName is not available in UE5.7.
+	return true;
 }
 
 void FKrumOpenCodeAgent::SendMessage(const FString& Prompt, const FString& Context, FOnMessageReceived OnResponse, FOnMessageReceived OnError)

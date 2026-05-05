@@ -23,7 +23,7 @@ public:
 	void SetModel(const FString& Model);
 
 private:
-	void OnStreamProgress(FHttpRequestPtr Req, int32 BytesSent, int32 BytesReceived, FOnMessageReceived OnResponse, FOnMessageReceived OnError);
+	void OnStreamProgress(FHttpRequestPtr Req, uint64 BytesSent, uint64 BytesReceived, FOnMessageReceived OnResponse, FOnMessageReceived OnError);
 	void OnStreamComplete(FHttpRequestPtr Req, FHttpResponsePtr Resp, bool bSuccess, FOnMessageReceived OnError);
 
 private:

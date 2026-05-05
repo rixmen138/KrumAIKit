@@ -69,7 +69,8 @@ FString FSetBlueprintVariableDefaultTool::Execute(const TSharedPtr<FJsonObject>&
 		return TEXT("{\"error\": \"Variable not found in Blueprint\"}");
 	}
 
-	FBlueprintEditorUtils::SetBlueprintVariableDefaultValue(Blueprint, Blueprint->NewVariables[VarIndex].VarName, DefaultValue);
-
-	return TEXT("{\"status\": \"success\"}");
+	// TODO: UE 5.7 removed FBlueprintEditorUtils::SetBlueprintVariableDefaultValue.
+	// We need to implement default value setting via UK2Node or Metadata directly in the future.
+	// For now, return an error.
+	return TEXT("{\"error\": \"Not implemented: SetBlueprintVariableDefaultValue is deprecated in UE5.7.\"}");
 }

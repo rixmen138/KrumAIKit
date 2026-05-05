@@ -3,6 +3,8 @@
 #include "Serialization/JsonSerializer.h"
 #include "Engine/Blueprint.h"
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Engine/SCS_Node.h"
+#include "Engine/SimpleConstructionScript.h"
 
 FString FGetBlueprintInfoTool::GetName() const
 {
@@ -72,9 +74,10 @@ FString FGetBlueprintInfoTool::Execute(const TSharedPtr<FJsonObject>& Params)
 
 	// Components
 	TArray<TSharedPtr<FJsonValue>> CompsArray;
-	if (Blueprint->SimpleConstructionScript)
+	USimpleConstructionScript* SCS = Blueprint->SimpleConstructionScript.Get();
+	if (SCS)
 	{
-		for (USCS_Node* Node : Blueprint->SimpleConstructionScript->GetAllNodes())
+		for (USCS_Node* Node : SCS->GetAllNodes())
 		{
 			if (Node && Node->ComponentClass)
 			{

@@ -11,6 +11,7 @@
 #include "KrumProjectIndexer.h"
 #include "Misc/FileHelper.h"
 #include "KrumSettings.h"
+#include "KrumAIKitCore.h"
 
 static const FName KrumAITabName("KrumAI");
 

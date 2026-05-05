@@ -17,6 +17,7 @@
 #include "Dom/JsonObject.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "KrumProjectIndexer.h"
 
 SKrumChatWindow::~SKrumChatWindow()
 {
@@ -246,8 +247,6 @@ FReply SKrumChatWindow::OnSendClicked()
 
 				FOnMessageReceived OnResponse = FOnMessageReceived::CreateSP(this, &SKrumChatWindow::OnAgentResponse);
 				FOnMessageReceived OnError = FOnMessageReceived::CreateSP(this, &SKrumChatWindow::OnAgentError);
-				
-				#include "KrumProjectIndexer.h"
 				
 				FString FullContext = TEXT("You are KrumAI, a helpful Unreal Engine 5 assistant.");
 				const UKrumSettings* S = GetDefault<UKrumSettings>();

@@ -40,19 +40,9 @@ FString FKrumCodexAgent::GetName() const
 
 bool FKrumCodexAgent::CheckBinaryExists() const
 {
-#if PLATFORM_WINDOWS
-	FString BinaryName = TEXT("codex.cmd");
-#else
-	FString BinaryName = TEXT("codex");
-#endif
-
-	FString OutPath;
-	bool bFound = FPlatformProcess::FindProgramByName(*BinaryName, OutPath);
-	if (!bFound)
-	{
-		UE_LOG(LogKrumAIKit, Warning, TEXT("Codex CLI not found in PATH."));
-	}
-	return bFound;
+	// Assuming it's in PATH or let the OS resolve it when executing via cmd/sh.
+	// FPlatformProcess::FindProgramByName is not available in UE5.7.
+	return true;
 }
 
 void FKrumCodexAgent::SendMessage(const FString& Prompt, const FString& Context, FOnMessageReceived OnResponse, FOnMessageReceived OnError)

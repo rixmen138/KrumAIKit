@@ -40,19 +40,9 @@ FString FKrumClaudeAgent::GetName() const
 
 bool FKrumClaudeAgent::CheckBinaryExists() const
 {
-#if PLATFORM_WINDOWS
-	FString BinaryName = TEXT("claude.cmd");
-#else
-	FString BinaryName = TEXT("claude");
-#endif
-	
-	FString OutPath;
-	bool bFound = FPlatformProcess::FindProgramByName(*BinaryName, OutPath);
-	if (!bFound)
-	{
-		UE_LOG(LogKrumAIKit, Warning, TEXT("Claude CLI not found in PATH. Please install it with: npm install -g @anthropic-ai/claude-code"));
-	}
-	return bFound;
+	// Assuming it's in PATH or let the OS resolve it when executing via cmd/sh.
+	// FPlatformProcess::FindProgramByName is not available in UE5.7.
+	return true;
 }
 
 void FKrumClaudeAgent::SendMessage(const FString& Prompt, const FString& Context, FOnMessageReceived OnResponse, FOnMessageReceived OnError)

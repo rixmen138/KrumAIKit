@@ -59,7 +59,9 @@ FString FAddComponentTool::Execute(const TSharedPtr<FJsonObject>& Params)
 	}
 
 	UBlueprint* Blueprint = LoadObject<UBlueprint>(nullptr, *AssetPath);
-	if (!Blueprint || !Blueprint->SimpleConstructionScript)
+	USimpleConstructionScript* SCS = Blueprint ? Blueprint->SimpleConstructionScript.Get() : nullptr;
+	
+	if (!Blueprint || !SCS)
 	{
 		return TEXT("{\"error\": \"Could not load Blueprint or it lacks a ConstructionScript\"}");
 	}
@@ -75,13 +77,13 @@ FString FAddComponentTool::Execute(const TSharedPtr<FJsonObject>& Params)
 		return TEXT("{\"error\": \"Invalid component class\"}");
 	}
 
-	USCS_Node* NewNode = Blueprint->SimpleConstructionScript->CreateNode(CompClass, *ComponentName);
+	USCS_Node* NewNode = SCS->CreateNode(CompClass, *ComponentName);
 	if (!NewNode)
 	{
 		return TEXT("{\"error\": \"Failed to create node\"}");
 	}
 
-	Blueprint->SimpleConstructionScript->AddNode(NewNode);
+	SCS->AddNode(NewNode);
 	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 
 	return TEXT("{\"status\": \"success\"}");

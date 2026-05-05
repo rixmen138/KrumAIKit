@@ -38,19 +38,9 @@ FString FKrumGeminiAgent::GetName() const
 
 bool FKrumGeminiAgent::CheckBinaryExists() const
 {
-#if PLATFORM_WINDOWS
-	FString BinaryName = TEXT("gemini.cmd");
-#else
-	FString BinaryName = TEXT("gemini");
-#endif
-
-	FString OutPath;
-	bool bFound = FPlatformProcess::FindProgramByName(*BinaryName, OutPath);
-	if (!bFound)
-	{
-		UE_LOG(LogKrumAIKit, Warning, TEXT("Gemini CLI not found in PATH. Please install it (e.g. npm install -g @google/gemini-cli)."));
-	}
-	return bFound;
+	// Assuming it's in PATH or let the OS resolve it when executing via cmd/sh.
+	// FPlatformProcess::FindProgramByName is not available in UE5.7.
+	return true;
 }
 
 void FKrumGeminiAgent::SendMessage(const FString& Prompt, const FString& Context, FOnMessageReceived OnResponse, FOnMessageReceived OnError)

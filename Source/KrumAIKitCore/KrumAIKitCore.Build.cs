@@ -10,6 +10,7 @@ public class KrumAIKitCore : ModuleRules
 			new string[]
 			{
 				"Core",
+				"AssetRegistry"
 			}
 		);
 			
@@ -20,7 +21,6 @@ public class KrumAIKitCore : ModuleRules
 				"Engine",
 				"Json",
 				"JsonUtilities",
-				"AssetRegistry",
 				"DeveloperSettings"
 			}
 		);

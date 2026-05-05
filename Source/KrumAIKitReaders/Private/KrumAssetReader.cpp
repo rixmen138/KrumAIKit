@@ -14,6 +14,8 @@
 #include "Sound/SoundCue.h"
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
+#include "Engine/SCS_Node.h"
+#include "Engine/SimpleConstructionScript.h"
 
 FString FKrumAssetReader::ReadAsset(const FString& AssetPath)
 {
@@ -109,9 +111,10 @@ FString FKrumAssetReader::ReadBlueprint(const FAssetData& AD)
 
 	// Components
 	TArray<TSharedPtr<FJsonValue>> CompsArray;
-	if (BP->SimpleConstructionScript)
+	USimpleConstructionScript* SCS = BP->SimpleConstructionScript.Get();
+	if (SCS)
 	{
-		for (USCS_Node* Node : BP->SimpleConstructionScript->GetAllNodes())
+		for (USCS_Node* Node : SCS->GetAllNodes())
 		{
 			if (Node && Node->ComponentClass)
 			{
