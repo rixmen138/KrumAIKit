@@ -192,7 +192,15 @@ FReply SKrumChatWindow::OnSendClicked()
 				FOnMessageReceived OnResponse = FOnMessageReceived::CreateSP(this, &SKrumChatWindow::OnAgentResponse);
 				FOnMessageReceived OnError = FOnMessageReceived::CreateSP(this, &SKrumChatWindow::OnAgentError);
 				
-				ActiveAgent->SendMessage(InputText, TEXT("You are KrumAI, a helpful Unreal Engine 5 assistant."), OnResponse, OnError);
+				#include "KrumProjectIndexer.h"
+				
+				FString ContextSnippet = FKrumProjectIndexer::Get().GetContextSnippet(InputText);
+				FString FullContext = TEXT("You are KrumAI, a helpful Unreal Engine 5 assistant.");
+				if (!ContextSnippet.IsEmpty())
+				{
+					FullContext += TEXT("\n\n") + ContextSnippet;
+				}
+				ActiveAgent->SendMessage(InputText, FullContext, OnResponse, OnError);
 			}
 		}
 	}

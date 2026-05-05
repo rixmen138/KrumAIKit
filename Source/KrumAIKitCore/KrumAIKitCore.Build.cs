@@ -19,7 +19,8 @@ public class KrumAIKitCore : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Json",
-				"JsonUtilities"
+				"JsonUtilities",
+				"AssetRegistry"
 			}
 		);
 	}

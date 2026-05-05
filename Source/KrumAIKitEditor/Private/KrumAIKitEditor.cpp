@@ -8,6 +8,7 @@
 #include "Widgets/Docking/SDockTab.h"
 #include "SKrumChatWindow.h"
 #include "KrumMCPServer.h"
+#include "KrumProjectIndexer.h"
 #include "Misc/FileHelper.h"
 
 static const FName KrumAITabName("KrumAI");
@@ -64,10 +65,14 @@ void FKrumAIKitEditorModule::StartupModule()
 
 	// We will read settings to start MCPServer in a future step, for now just start it:
 	// MCPServer = MakeUnique<FKrumMCPServer>(); MCPServer->Start();
+
+	FKrumProjectIndexer::Get().Start();
 }
 
 void FKrumAIKitEditorModule::ShutdownModule()
 {
+	FKrumProjectIndexer::Get().Stop();
+
 	if (MCPServer)
 	{
 		MCPServer->Stop();
