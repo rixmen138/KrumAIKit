@@ -4,7 +4,7 @@
 #include "IKrumAgent.h"
 #include "Interfaces/IHttpRequest.h"
 
-class FKrumOllamaAgent : public IKrumAgent
+class KRUMAIKITAGENTS_API FKrumOllamaAgent : public IKrumAgent
 {
 public:
 	FKrumOllamaAgent();

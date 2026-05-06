@@ -4,7 +4,7 @@
 #include "IKrumAgent.h"
 #include "Interfaces/IHttpRequest.h"
 
-class FKrumOpenRouterAgent : public IKrumAgent
+class KRUMAIKITAGENTS_API FKrumOpenRouterAgent : public IKrumAgent
 {
 public:
 	FKrumOpenRouterAgent();

@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "IKrumAgent.h"
 
-class FKrumGeminiAgent : public IKrumAgent
+class KRUMAIKITAGENTS_API FKrumGeminiAgent : public IKrumAgent
 {
 public:
 	FKrumGeminiAgent();
