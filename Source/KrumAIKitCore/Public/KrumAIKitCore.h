@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Modules/ModuleManager.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogKrumAIKit, Log, All);
+KRUMAIKITCORE_API DECLARE_LOG_CATEGORY_EXTERN(LogKrumAIKit, Log, All);
 
 class FKrumAIKitCoreModule : public IModuleInterface
 {

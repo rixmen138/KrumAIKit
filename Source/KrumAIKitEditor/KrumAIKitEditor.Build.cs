@@ -10,6 +10,11 @@ public class KrumAIKitEditor : ModuleRules
 			new string[]
 			{
 				"Core",
+				"InputCore",
+				"Json",
+				"JsonUtilities",
+				"Projects",
+				"KrumAIKitAgents"
 			}
 		);
 			
@@ -25,7 +30,6 @@ public class KrumAIKitEditor : ModuleRules
 				"EditorStyle",
 				"ToolMenus",
 				"KrumAIKitCore",
-				"KrumAIKitAgents",
 				"KrumAIKitTools"
 			}
 		);
