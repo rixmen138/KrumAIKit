@@ -58,11 +58,11 @@ void FKrumOpenCodeAgent::SendMessage(const FString& Prompt, const FString& Conte
 #if PLATFORM_WINDOWS
 	FString URL = TEXT("cmd.exe");
 	FString EscapedPrompt = Prompt.Replace(TEXT("\""), TEXT("\\\""));
-	FString Args = FString::Printf(TEXT("/c opencode run \"%s\" --format json"), *EscapedPrompt);
+	FString Args = FString::Printf(TEXT("/c opencode run \"%s\" --format json --dangerously-skip-permissions"), *EscapedPrompt);
 #else
 	FString URL = TEXT("sh");
 	FString EscapedPrompt = Prompt.Replace(TEXT("\""), TEXT("\\\""));
-	FString Args = FString::Printf(TEXT("-c \"opencode run '%s' --format json\""), *EscapedPrompt);
+	FString Args = FString::Printf(TEXT("-c \"opencode run '%s' --format json --dangerously-skip-permissions\""), *EscapedPrompt);
 #endif
 
 	OpenCodeAccumulatedOutput.Empty();

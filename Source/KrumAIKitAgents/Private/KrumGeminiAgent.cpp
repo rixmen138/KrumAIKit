@@ -56,10 +56,10 @@ void FKrumGeminiAgent::SendMessage(const FString& Prompt, const FString& Context
 #if PLATFORM_WINDOWS
 	FString URL = TEXT("cmd.exe");
 	FString EscapedPrompt = Prompt.Replace(TEXT("\""), TEXT("\\\""));
-	FString Args = FString::Printf(TEXT("/c gemini -p \"%s\" --format json"), *EscapedPrompt);
+	FString Args = FString::Printf(TEXT("/c gemini -p \"%s\" --output-format json"), *EscapedPrompt);
 #else
 	FString URL = TEXT("gemini");
-	FString Args = FString::Printf(TEXT("-p \"%s\" --format json"), *Prompt.Replace(TEXT("\""), TEXT("\\\"")));
+	FString Args = FString::Printf(TEXT("-p \"%s\" --output-format json"), *Prompt.Replace(TEXT("\""), TEXT("\\\"")));
 #endif
 
 	GeminiAccumulatedOutput.Empty();
@@ -89,6 +89,15 @@ void FKrumGeminiAgent::SendMessage(const FString& Prompt, const FString& Context
 		TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(GeminiAccumulatedOutput);
 		if (FJsonSerializer::Deserialize(Reader, JsonObj) && JsonObj.IsValid())
 		{
+			// Check if we have 'text' or 'content' at root first
+			FString DirectResult;
+			if (JsonObj->TryGetStringField(TEXT("text"), DirectResult) || JsonObj->TryGetStringField(TEXT("content"), DirectResult))
+			{
+				OnResponse.ExecuteIfBound(DirectResult);
+				return;
+			}
+
+			// Original nested candidate check
 			const TArray<TSharedPtr<FJsonValue>>* Candidates;
 			if (JsonObj->TryGetArrayField(TEXT("candidates"), Candidates) && Candidates->Num() > 0)
 			{
