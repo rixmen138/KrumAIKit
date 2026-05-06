@@ -55,17 +55,14 @@ void FKrumOpenCodeAgent::SendMessage(const FString& Prompt, const FString& Conte
 
 	StopCurrent();
 
-	FString TempFilePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("KrumAIKit") / TEXT("opencode_prompt_temp.txt"));
-	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-	PlatformFile.CreateDirectoryTree(*FPaths::GetPath(TempFilePath));
-	FFileHelper::SaveStringToFile(Prompt, *TempFilePath, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
-
 #if PLATFORM_WINDOWS
 	FString URL = TEXT("cmd.exe");
-	FString Args = FString::Printf(TEXT("/c opencode run --output-format json < \"%s\""), *TempFilePath);
+	FString EscapedPrompt = Prompt.Replace(TEXT("\""), TEXT("\\\""));
+	FString Args = FString::Printf(TEXT("/c opencode run \"%s\" --format json"), *EscapedPrompt);
 #else
 	FString URL = TEXT("sh");
-	FString Args = FString::Printf(TEXT("-c \"opencode run --output-format json < '%s'\""), *TempFilePath);
+	FString EscapedPrompt = Prompt.Replace(TEXT("\""), TEXT("\\\""));
+	FString Args = FString::Printf(TEXT("-c \"opencode run '%s' --format json\""), *EscapedPrompt);
 #endif
 
 	OpenCodeAccumulatedOutput.Empty();

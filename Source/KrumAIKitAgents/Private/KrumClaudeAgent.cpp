@@ -62,10 +62,10 @@ void FKrumClaudeAgent::SendMessage(const FString& Prompt, const FString& Context
 
 #if PLATFORM_WINDOWS
 	FString URL = TEXT("cmd.exe");
-	FString Args = FString::Printf(TEXT("/c claude --print --output-format stream-json < \"%s\""), *TempFilePath);
+	FString Args = FString::Printf(TEXT("/c claude --print --output-format stream-json --verbose < \"%s\""), *TempFilePath);
 #else
 	FString URL = TEXT("sh");
-	FString Args = FString::Printf(TEXT("-c \"claude --print --output-format stream-json < '%s'\""), *TempFilePath);
+	FString Args = FString::Printf(TEXT("-c \"claude --print --output-format stream-json --verbose < '%s'\""), *TempFilePath);
 #endif
 
 	ClaudeLineBuffer.Empty();
